@@ -1,0 +1,51 @@
+name: Synthesize sentence audio
+on:
+  workflow_dispatch:
+    inputs:
+      texts:
+        description: gzip+base64 的 JSON 列表 [[id, text], ...]
+        required: true
+      voice:
+        default: en-US-JennyNeural
+      rate:
+        default: "-10%"
+jobs:
+  tts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install edge-tts && sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: synth
+        env:
+          TEXTS: ${{ inputs.texts }}
+          VOICE: ${{ inputs.voice }}
+          RATE: ${{ inputs.rate }}
+        run: |
+          python - <<'PY'
+          import os, json, gzip, base64, asyncio, subprocess, io, tarfile
+          import edge_tts
+          items = json.loads(gzip.decompress(base64.b64decode(os.environ["TEXTS"])))
+          os.makedirs("out", exist_ok=True)
+          async def one(i, t):
+              for k in range(4):
+                  try:
+                      await edge_tts.Communicate(t, os.environ["VOICE"], rate=os.environ["RATE"]).save(f"raw_{i}.mp3"); return
+                  except Exception as e:
+                      print("retry", i, e); await asyncio.sleep(3)
+              raise RuntimeError(t)
+          async def main():
+              sem = asyncio.Semaphore(6)
+              async def run(i, t):
+                  async with sem: await one(i, t)
+              await asyncio.gather(*[run(i, t) for i, t in items])
+          asyncio.run(main())
+          for i, t in items:
+              subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", f"raw_{i}.mp3", "-ac", "1", "-ar", "24000", "-b:a", "40k", f"out/{i}.mp3"], check=True)
+          buf = io.BytesIO()
+          with tarfile.open(fileobj=buf, mode="w:gz") as tf: tf.add("out", arcname="out")
+          b = base64.b64encode(buf.getvalue()).decode()
+          print("TTS-BEGIN", len(items), len(b))
+          for k in range(0, len(b), 4000): print("TTS:" + b[k:k+4000])
+          print("TTS-END")
+          PY
