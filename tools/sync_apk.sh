@@ -16,8 +16,18 @@ OLD=$(grep -o '"versionCode": *[0-9]*' "$DIR/latest.json" 2>/dev/null | grep -o 
 [ "$NEW" -le "${OLD:-0}" ] && exit 0
 APK=$(grep -o '"apk": *"[^"]*"' /tmp/latest.json | sed 's/.*"\([^"]*\)"$/\1/')
 URL_APK=$(echo "$API" | grep -o "\"browser_download_url\": *\"[^\"]*$APK\"" | sed 's/.*"\(http[^"]*\)"/\1/')
-curl -fsSL --max-time 900 "$URL_APK" -o "$DIR/$APK.part" && mv "$DIR/$APK.part" "$DIR/$APK"
+# 服务器连 GitHub 不稳定：断点续传，最多重试 8 次；下载不完整就不更新 latest.json
+ok=0
+for i in 1 2 3 4 5 6 7 8; do
+  if curl -fsSL --retry 3 --max-time 900 -C - "$URL_APK" -o "$DIR/$APK.part"; then ok=1; break; fi
+  sleep 5
+done
+SIZE=$(stat -c %s "$DIR/$APK.part" 2>/dev/null || echo 0)
+if [ "$ok" != 1 ] || [ "$SIZE" -lt 1000000 ] || ! unzip -tq "$DIR/$APK.part" >/dev/null 2>&1; then
+  echo "download failed, will retry next time"; exit 1
+fi
+mv "$DIR/$APK.part" "$DIR/$APK"
 cp /tmp/latest.json "$DIR/latest.json"
-ls -1t "$DIR"/StudyHub-*.apk | tail -n +4 | xargs -r rm -f   # 只保留最近 3 个版本
+ls -1t "$DIR"/StudyHub-*.apk 2>/dev/null | tail -n +4 | xargs -r rm -f   # 只保留最近 3 个版本
 chmod -R a+rX "$DIR"
 echo "synced $APK"
