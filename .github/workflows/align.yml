@@ -1,0 +1,28 @@
+name: Align lesson audio
+
+on:
+  workflow_dispatch:
+    inputs:
+      unit:
+        description: 单元资源路径
+        default: english/pep3a/u1/
+      server:
+        description: 资源服务器地址
+        required: true
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install faster-whisper==1.1.1
+      - name: Align
+        run: python tools/align.py --server "${{ inputs.server }}" --unit "${{ inputs.unit }}" --out align.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: align
+          path: align.json
+          retention-days: 1
