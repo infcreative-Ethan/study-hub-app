@@ -55,7 +55,7 @@ class SegmentPlayer {
         val p = ensure(file) ?: return
         watcher?.cancel()
         try {
-            p.seekTo((start * 1000).toInt())
+            p.seekTo((start * 1000).toLong(), MediaPlayer.SEEK_CLOSEST)
             applySpeed(p)
             p.start()
         } catch (e: Exception) { return }
