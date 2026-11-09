@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.infcreative.studyhub.AppState
 import com.infcreative.studyhub.QuizItem
 import com.infcreative.studyhub.Screen
+import com.infcreative.studyhub.Test
 import com.infcreative.studyhub.SegmentPlayer
 import com.infcreative.studyhub.Tts
 import com.infcreative.studyhub.UnitData
@@ -253,7 +255,7 @@ private fun TestsTab(app: AppState, ref: UnitRef, unit: UnitData) {
     val all = remember(unit.id) {
         val m = LinkedHashMap<String, QuizItem>()
         unit.kpractice.forEachIndexed { i, q -> m[prefix + "kp/$i"] = QuizItem(prefix + "kp/$i", "知识点练习", q) }
-        unit.tests.forEach { t ->
+        (unit.tests + unit.practice).forEach { t ->
             t.sections.forEachIndexed { si, s ->
                 s.qs.forEachIndexed { qi, q ->
                     val k = prefix + "${t.id}/$si/$qi"
@@ -270,32 +272,15 @@ private fun TestsTab(app: AppState, ref: UnitRef, unit: UnitData) {
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        itemsIndexed(unit.tests) { _, t ->
-            val sc = prog?.score(prefix + t.id)
-            val total = t.sections.sumOf { it.qs.size }
-            val listen = t.sections.filter { it.listen }.sumOf { it.qs.size }
-            Column(
-                Modifier
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White)
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(18.dp))
-                    .clickable {
-                        val items = t.sections.flatMapIndexed { si, s ->
-                            s.qs.mapIndexed { qi, q -> QuizItem(prefix + "${t.id}/$si/$qi", s.title, q) }
-                        }
-                        app.go(Screen.Quiz(ref, t.title, prefix + t.id, items))
-                    }
-                    .padding(18.dp),
-            ) {
-                Text("📝 ${t.title}", fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                SpacerH(6)
-                Text("共 $total 题，其中听力 $listen 题", fontSize = 16.sp, color = Color.DarkGray)
-                SpacerH(6)
-                Text(
-                    sc?.let { "上次成绩：${it.first} / ${it.second}" } ?: "还没做过",
-                    fontSize = 16.sp, color = if (sc != null) MaterialTheme.colorScheme.tertiary else Color.Gray,
-                )
+        if (unit.practice.isNotEmpty() && unit.tests.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) { Text("单元测试", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+        }
+        gridItems(unit.tests) { t -> TestCard(app, ref, prefix, t, "📝") }
+        if (unit.practice.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text("同步练习（按课时）", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
             }
+            gridItems(unit.practice) { t -> TestCard(app, ref, prefix, t, "✏️") }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
@@ -318,3 +303,35 @@ private fun TestsTab(app: AppState, ref: UnitRef, unit: UnitData) {
         }
     }
 }
+
+
+@Composable
+private fun TestCard(app: AppState, ref: UnitRef, prefix: String, t: Test, icon: String) {
+    val prog = app.progress
+            val sc = prog?.score(prefix + t.id)
+            val total = t.sections.sumOf { it.qs.size }
+            val listen = t.sections.filter { it.listen }.sumOf { it.qs.size }
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(18.dp))
+                    .clickable {
+                        val items = t.sections.flatMapIndexed { si, s ->
+                            s.qs.mapIndexed { qi, q -> QuizItem(prefix + "${t.id}/$si/$qi", s.title, q) }
+                        }
+                        app.go(Screen.Quiz(ref, t.title, prefix + t.id, items))
+                    }
+                    .padding(18.dp),
+            ) {
+                Text("$icon ${t.title}", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                t.sub?.let { Text(it, fontSize = 15.sp, color = Color.Gray, maxLines = 1) }
+                SpacerH(6)
+                Text(if (listen > 0) "共 $total 题，其中听力 $listen 题" else "共 $total 题", fontSize = 16.sp, color = Color.DarkGray)
+                SpacerH(6)
+                Text(
+                    sc?.let { "上次成绩：${it.first} / ${it.second}" } ?: "还没做过",
+                    fontSize = 16.sp, color = if (sc != null) MaterialTheme.colorScheme.tertiary else Color.Gray,
+                )
+            }
+        }

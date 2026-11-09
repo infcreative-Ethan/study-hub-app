@@ -64,12 +64,13 @@ data class Question(
 )
 
 data class Section(val title: String, val listen: Boolean, val qs: List<Question>)
-data class Test(val id: String, val title: String, val sections: List<Section>)
+data class Test(val id: String, val title: String, val sections: List<Section>, val sub: String? = null)
 
 data class UnitData(
     val id: String, val title: String, val titleCn: String,
     val lessons: List<Lesson>, val words: List<Word>,
     val knowledge: List<KCard>, val kpractice: List<Question>, val tests: List<Test>,
+    val practice: List<Test> = emptyList(),
 )
 
 fun parseQuestion(o: JSONObject): Question {
@@ -110,14 +111,16 @@ fun parseUnit(o: JSONObject): UnitData = UnitData(
         KCard(k.str("title") ?: "", k.arr("items").mapObj { KItem(it.str("en") ?: "", it.str("cn") ?: "", it.str("ex")) }, k.str("tip"))
     },
     kpractice = o.arr("kpractice").mapObj { parseQuestion(it) },
-    tests = o.arr("tests").mapObj { t ->
-        Test(
-            t.getString("id"), t.str("title") ?: "",
-            t.arr("sections").mapObj { s ->
-                Section(s.str("title") ?: "", s.optBoolean("listen", false), s.arr("qs").mapObj { parseQuestion(it) })
-            },
-        )
+    tests = o.arr("tests").mapObj { parseTest(it) },
+    practice = o.arr("practice").mapObj { parseTest(it) },
+)
+
+private fun parseTest(t: JSONObject) = Test(
+    t.getString("id"), t.str("title") ?: "",
+    t.arr("sections").mapObj { s ->
+        Section(s.str("title") ?: "", s.optBoolean("listen", false), s.arr("qs").mapObj { parseQuestion(it) })
     },
+    t.str("sub"),
 )
 
 /** 比较连词成句答案：忽略大小写、标点和多余空格 */
