@@ -170,7 +170,7 @@ private fun Cover(app: AppState, path: String?, name: String) {
 }
 
 // ================= 我的：学习任务 + 学习情况 =================
-private data class Task(val title: String, val tag: String, val done: Boolean)
+private data class DemoTask(val title: String, val tag: String, val done: Boolean)
 
 @Composable
 fun MyScreen(app: AppState) {
@@ -180,11 +180,11 @@ fun MyScreen(app: AppState) {
     val u1 = "english/pep3a/u1/"
     val tasks = remember {
         if (prog == null) emptyList() else listOf(
-            Task("学完 Unit 1 的新单词", "英语 · 单词", prog.wordCount(u1) >= 18),
-            Task("跟读 Unit 1 Let's talk（P4）", "英语 · 朗读", prog.hasKeyPrefix("quiz", u1 + "read/p4_talk")),
-            Task("复习今天的单词", "英语 · 复习", (st?.learned ?: 0) > 0 && (st?.due ?: 1) == 0),
-            Task("完成 Unit 1 知识点练习", "英语 · 练习", prog.score(u1 + "kp") != null),
-            Task("完成 Unit 1 单元测试（一）", "英语 · 试卷", prog.score(u1 + "t1") != null),
+            DemoTask("学完 Unit 1 的新单词", "英语 · 单词", prog.wordCount(u1) >= 18),
+            DemoTask("跟读 Unit 1 Let's talk（P4）", "英语 · 朗读", prog.hasKeyPrefix("quiz", u1 + "read/p4_talk")),
+            DemoTask("复习今天的单词", "英语 · 复习", (st?.learned ?: 0) > 0 && (st?.due ?: 1) == 0),
+            DemoTask("完成 Unit 1 知识点练习", "英语 · 练习", prog.score(u1 + "kp") != null),
+            DemoTask("完成 Unit 1 单元测试（一）", "英语 · 试卷", prog.score(u1 + "t1") != null),
         )
     }
     Column(Modifier.fillMaxSize()) {
