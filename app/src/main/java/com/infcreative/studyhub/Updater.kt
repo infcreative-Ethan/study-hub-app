@@ -43,25 +43,26 @@ object Updater {
 
     /** 返回比当前新的版本；没有新版本或查不到返回 null */
     suspend fun check(ctx: Context, server: String): UpdateInfo? = withContext(Dispatchers.IO) {
-        val info: UpdateInfo? = try {
+        // 两处都查，取版本号最大的；一样新时优先用资源服务器（国内下载快）
+        val fromServer: UpdateInfo? = try {
             val o = JSONObject(get(server + "app/latest.json"))
             val apk = o.getString("apk")
             UpdateInfo(o.getInt("versionCode"), o.optString("versionName"),
                 if (apk.startsWith("http")) apk else server + "app/" + apk, o.optString("notes"))
-        } catch (e: Exception) {
-            try {
-                val o = JSONObject(get(GITHUB_API))
-                val tag = o.getString("tag_name")             // build-23
-                val code = tag.substringAfter("build-").toIntOrNull() ?: 0
-                val assets = o.getJSONArray("assets")
-                var url = ""
-                for (i in 0 until assets.length()) {
-                    val a = assets.getJSONObject(i)
-                    if (a.getString("name").endsWith(".apk")) url = a.getString("browser_download_url")
-                }
-                if (url.isEmpty()) null else UpdateInfo(code, tag, url, o.optString("body"))
-            } catch (e2: Exception) { null }
-        }
+        } catch (e: Exception) { null }
+        val fromGithub: UpdateInfo? = try {
+            val o = JSONObject(get(GITHUB_API))
+            val tag = o.getString("tag_name")             // build-23
+            val code = tag.substringAfter("build-").toIntOrNull() ?: 0
+            val assets = o.getJSONArray("assets")
+            var url = ""
+            for (i in 0 until assets.length()) {
+                val a = assets.getJSONObject(i)
+                if (a.getString("name").endsWith(".apk")) url = a.getString("browser_download_url")
+            }
+            if (url.isEmpty()) null else UpdateInfo(code, tag, url, o.optString("body"))
+        } catch (e: Exception) { null }
+        val info = listOfNotNull(fromServer, fromGithub).maxByOrNull { it.code * 2 + if (it === fromServer) 1 else 0 }
         if (info != null && info.code > currentCode(ctx)) info else null
     }
 
