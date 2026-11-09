@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(colorScheme = AppColors) {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    AppRoot(state)
+                    AdaptiveScale { AppRoot(state) }
                 }
             }
         }
@@ -108,5 +108,20 @@ fun AppRoot(app: AppState) {
         is Screen.WordLearn -> WordLearnScreen(app, top)
         is Screen.WordReview -> WordReviewScreen(app, top)
         is Screen.Quiz -> QuizScreen(app, top)
+    }
+}
+
+/**
+ * 界面按平板横屏（约 1100×640dp）设计；屏幕更小（如手机横屏）时整体等比缩小，
+ * 文字、按钮、间距一起缩，布局比例不变。
+ */
+@Composable
+fun AdaptiveScale(content: @Composable () -> Unit) {
+    val cfg = androidx.compose.ui.platform.LocalConfiguration.current
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val f = minOf(1f, cfg.screenHeightDp / 640f, cfg.screenWidthDp / 1100f).coerceAtLeast(0.6f)
+    val density = androidx.compose.ui.unit.Density(d.density * f, d.fontScale.coerceAtMost(1.15f))
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides density) {
+        content()
     }
 }
