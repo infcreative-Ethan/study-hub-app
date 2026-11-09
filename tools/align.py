@@ -77,6 +77,7 @@ def main():
     ap.add_argument("--out", default="align.json")
     ap.add_argument("--model", default="small.en")
     ap.add_argument("--only", default="")
+    ap.add_argument("--separate", action="store_true", help="先用 demucs 分离人声")
     a = ap.parse_args()
     base = a.server.rstrip("/") + "/" + a.unit.strip("/") + "/"
     unit = json.loads(urllib.request.urlopen(base + "unit.json").read().decode("utf-8"))
@@ -89,6 +90,10 @@ def main():
             continue
         local = os.path.join("audio", L["id"] + ".mp3")
         urllib.request.urlretrieve(base + L["audio"], local)
+        if a.separate:
+            import subprocess
+            subprocess.run(["python", "-m", "demucs", "--two-stems=vocals", "-n", "htdemucs", "--mp3", "-o", "sep", local], check=True)
+            local = os.path.join("sep", "htdemucs", L["id"], "vocals.mp3")
         prompt = " ".join(s["en"] for s in L["sentences"])[:800] or None
         segs, _ = model.transcribe(local, language="en", word_timestamps=True, beam_size=5,
                                    vad_filter=False, condition_on_previous_text=False,

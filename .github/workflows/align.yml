@@ -10,6 +10,8 @@ on:
         default: small.en
       only:
         default: ""
+      separate:
+        default: "no"
       server:
         description: 资源服务器地址
         required: true
@@ -23,8 +25,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install faster-whisper==1.1.1 requests
+      - if: inputs.separate == 'yes'
+        run: pip install demucs torchaudio soundfile
       - name: Align
-        run: python tools/align.py --server "${{ inputs.server }}" --unit "${{ inputs.unit }}" --out align.json --model "${{ inputs.model }}" --only "${{ inputs.only }}"
+        run: python tools/align.py --server "${{ inputs.server }}" --unit "${{ inputs.unit }}" --out align.json --model "${{ inputs.model }}" --only "${{ inputs.only }}" ${{ inputs.separate == 'yes' && '--separate' || '' }}
       - uses: actions/upload-artifact@v4
         with:
           name: align
