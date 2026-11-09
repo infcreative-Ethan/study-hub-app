@@ -1,5 +1,11 @@
 package com.infcreative.studyhub.ui
 
+import androidx.compose.foundation.layout.height
+
+import androidx.compose.ui.layout.ContentScale
+
+import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -115,6 +121,10 @@ fun QuizScreen(app: AppState, page: Screen.Quiz) {
                     }
                     SpacerH(12)
                 }
+                q.image?.let { rememberBitmap(app.store.file(page.ref, it)) }?.let { bmp ->
+                    Image(bmp, null, Modifier.height(170.dp).fillMaxWidth(), contentScale = ContentScale.Fit, alignment = Alignment.CenterStart)
+                    SpacerH(10)
+                }
                 Text(q.q, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 36.sp)
                 if (answered) {
                     SpacerH(16)
@@ -156,6 +166,37 @@ fun QuizScreen(app: AppState, page: Screen.Quiz) {
                                 val ok = normalizeAnswer(ans) == normalizeAnswer(q.answerText)
                                 orderOk = ok; record(ok)
                             }
+                        }
+                    }
+                } else if (q.optionImages.size == q.options.size && q.optionImages.isNotEmpty()) {
+                    // 图片选项：每行 3 个
+                    q.options.indices.chunked(3).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            row.forEach { oi ->
+                                val bg = when {
+                                    !answered -> Color.White
+                                    oi == q.answer -> MaterialTheme.colorScheme.tertiaryContainer
+                                    oi == chosen -> MaterialTheme.colorScheme.errorContainer
+                                    else -> Color.White
+                                }
+                                val bmp = rememberBitmap(app.store.file(page.ref, q.optionImages[oi]))
+                                Column(
+                                    Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(bg)
+                                        .border(1.5.dp, Color(0xFFCBD5E1), RoundedCornerShape(14.dp))
+                                        .clickable(enabled = !answered) { chosen = oi; record(oi == q.answer) }
+                                        .padding(8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text("${'A' + oi}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                    if (bmp != null) Image(bmp, null, Modifier.height(110.dp).fillMaxWidth(), contentScale = ContentScale.Fit)
+                                    else Text(q.options[oi], fontSize = 18.sp)
+                                    if (answered && bmp != null) Text(q.options[oi].replace(Regex("^[^\\p{L}\\p{N}]+"), ""), fontSize = 14.sp, color = Color.DarkGray, maxLines = 1)
+                                }
+                            }
+                            repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 } else {

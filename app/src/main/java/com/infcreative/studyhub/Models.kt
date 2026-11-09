@@ -61,6 +61,8 @@ data class Question(
     val tokens: List<String>,
     val answerText: String,
     val passage: String?,
+    val image: String? = null,
+    val optionImages: List<String> = emptyList(),
 )
 
 data class Section(val title: String, val listen: Boolean, val qs: List<Question>)
@@ -86,6 +88,8 @@ fun parseQuestion(o: JSONObject): Question {
         tokens = o.arr("w").strings(),
         answerText = if (type == "order") o.optString("a", "") else "",
         passage = o.str("passage"),
+        image = o.str("img"),
+        optionImages = o.arr("oi").strings(),
     )
 }
 
