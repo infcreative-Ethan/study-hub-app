@@ -112,6 +112,12 @@ def main():
         result[L["id"]] = {"sentences": out, "transcript": " ".join(f"{w[3]}@{w[1]}" for w in words)}
         print(L["id"], f"{sum(o['matched'] for o in out)}/{sum(o['n'] for o in out)}")
     json.dump(result, open(a.out, "w"), ensure_ascii=False, indent=1)
+    import base64, gzip
+    blob = base64.b64encode(gzip.compress(json.dumps(result, ensure_ascii=False).encode())).decode()
+    print("ALIGN-BEGIN")
+    for i in range(0, len(blob), 4000):
+        print("ALIGN:" + blob[i:i + 4000])
+    print("ALIGN-END")
 
 
 if __name__ == "__main__":
