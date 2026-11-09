@@ -189,7 +189,7 @@ fun MyScreen(app: AppState) {
     }
     Column(Modifier.fillMaxSize()) {
         Header("👤 我的", { app.back() }) {
-            HeaderChip("切换孩子") { app.stack.clear(); app.stack.add(Screen.Kids) }
+            HeaderChip("切换学生") { app.stack.clear(); app.stack.add(Screen.Kids) }
         }
         Row(Modifier.fillMaxSize().padding(20.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             // 左：个人信息 + 学习任务

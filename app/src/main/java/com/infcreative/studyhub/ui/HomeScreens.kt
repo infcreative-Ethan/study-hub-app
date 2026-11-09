@@ -105,7 +105,7 @@ fun KidsScreen(app: AppState) {
                 ) {
                     Text("➕", fontSize = 64.sp)
                     SpacerH(8)
-                    Text("添加孩子", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("添加学生", fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -116,7 +116,7 @@ fun KidsScreen(app: AppState) {
         var avatar by remember { mutableStateOf(AVATARS[0]) }
         AlertDialog(
             onDismissRequest = { adding = false },
-            title = { Text("添加孩子") },
+            title = { Text("添加学生") },
             text = {
                 Column {
                     OutlinedTextField(value = name, onValueChange = { name = it.take(10) }, label = { Text("名字") }, singleLine = true)
@@ -193,7 +193,7 @@ fun KidsScreen(app: AppState) {
                     }
                     info?.let { Text(it, fontSize = 14.sp, color = Color.Gray) }
                     SpacerH(8)
-                    Text("长按孩子头像可以删除孩子。", fontSize = 13.sp, color = Color.Gray)
+                    Text("长按学生头像可以删除学生。", fontSize = 13.sp, color = Color.Gray)
                     // 资源服务器地址默认隐藏：连续点版本号 7 次才显示（家长/管理员用）
                     if (taps >= 7) {
                         SpacerH(8)
