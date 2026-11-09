@@ -61,6 +61,15 @@ fun KidsScreen(app: AppState) {
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<Kid?>(null) }
     var settings by remember { mutableStateOf(false) }
+    var update by remember { mutableStateOf<com.infcreative.studyhub.UpdateInfo?>(null) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        if (!app.updateChecked) {
+            app.updateChecked = true
+            update = com.infcreative.studyhub.Updater.check(ctx, app.store.server)
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         Header("全科学习 · 谁来学习？", null) { HeaderChip("⚙ 设置") { settings = true } }
@@ -154,22 +163,46 @@ fun KidsScreen(app: AppState) {
         )
     }
 
+    update?.let { UpdateDialog(it) { update = null } }
+
     if (settings) {
         var url by remember { mutableStateOf(app.store.server) }
+        var taps by remember { mutableIntStateOf(0) }
+        var checking by remember { mutableStateOf(false) }
+        var info by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { settings = false },
             title = { Text("设置") },
             text = {
                 Column {
-                    Text("资源服务器地址（课本、音频从这里下载）")
+                    Text(
+                        "全科学习 · 第 ${com.infcreative.studyhub.Updater.currentCode(ctx)} 版",
+                        fontSize = 16.sp,
+                        modifier = Modifier.clickable { taps++ },
+                    )
                     SpacerH(8)
-                    OutlinedTextField(value = url, onValueChange = { url = it }, singleLine = true)
+                    SoftButton(if (checking) "正在检查…" else "检查更新") {
+                        if (!checking) {
+                            checking = true; info = null
+                            scope.launch {
+                                val u = com.infcreative.studyhub.Updater.check(ctx, app.store.server)
+                                checking = false
+                                if (u != null) { update = u; settings = false } else info = "已经是最新版本了"
+                            }
+                        }
+                    }
+                    info?.let { Text(it, fontSize = 14.sp, color = Color.Gray) }
                     SpacerH(8)
                     Text("长按孩子头像可以删除孩子。", fontSize = 13.sp, color = Color.Gray)
+                    // 资源服务器地址默认隐藏：连续点版本号 7 次才显示（家长/管理员用）
+                    if (taps >= 7) {
+                        SpacerH(8)
+                        Text("资源服务器地址（管理员）", fontSize = 13.sp)
+                        OutlinedTextField(value = url, onValueChange = { url = it }, singleLine = true)
+                    }
                 }
             },
-            confirmButton = { TextButton(onClick = { app.store.server = url; settings = false }) { Text("保存") } },
-            dismissButton = { TextButton(onClick = { settings = false }) { Text("取消") } },
+            confirmButton = { TextButton(onClick = { if (taps >= 7) app.store.server = url; settings = false }) { Text("好的") } },
         )
     }
 }
@@ -229,7 +262,7 @@ fun BookScreen(app: AppState, page: Screen.BookPage) {
                                 try {
                                     app.store.download(u) { f -> scope.launch { progress[u.id] = f } }
                                 } catch (e: Exception) {
-                                    errors = "下载失败：${e.message}"
+                                    errors = "下载没有成功，请检查网络后再试。"
                                 }
                                 progress.remove(u.id); tick++
                             }

@@ -49,6 +49,7 @@ class AppState(val store: Store, val profiles: Profiles) {
     var kid: Kid? = null
     var progress: Progress? = null
     var catalog: List<Subject>? = store.cachedCatalog()
+    var updateChecked = false
 
     fun go(s: Screen) { stack.add(s) }
     fun back() { if (stack.size > 1) stack.removeAt(stack.size - 1) }

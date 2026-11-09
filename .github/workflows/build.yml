@@ -31,6 +31,13 @@ jobs:
           mkdir -p out
           cp app/build/outputs/apk/release/app-release.apk out/StudyHub-${{ github.run_number }}.apk
 
+      - name: latest.json
+        run: |
+          MSG=$(git log -1 --pretty=%s | sed 's/"/\\"/g')
+          printf '{"versionCode": %s, "versionName": "build-%s", "apk": "StudyHub-%s.apk", "notes": "%s"}\n' \
+            "${{ github.run_number }}" "${{ github.run_number }}" "${{ github.run_number }}" "$MSG" > out/latest.json
+          cat out/latest.json
+
       - uses: actions/upload-artifact@v4
         with:
           name: StudyHub-apk
@@ -42,4 +49,6 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: 全科学习 第 ${{ github.run_number }} 版
           body: 自动编译。下载下面的 apk 装到平板上即可（可以直接覆盖安装旧版本）。
-          files: out/*.apk
+          files: |
+            out/*.apk
+            out/latest.json

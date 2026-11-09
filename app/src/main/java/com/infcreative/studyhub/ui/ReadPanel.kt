@@ -107,7 +107,7 @@ fun ReadPanel(app: AppState, scoreKey: String, sentence: Sentence, playOriginal:
                             Speech.install(ctx, app.store.server) { f -> scope.launch { dlProgress = f } }
                             installed = Speech.installed(ctx)
                         } catch (e: Exception) {
-                            error = "下载失败：${e.message ?: "请检查网络"}"
+                            error = "下载没有成功，请检查网络后再试。"
                         }
                         dlProgress = null
                     }
