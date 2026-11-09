@@ -155,6 +155,7 @@ private fun WordsTab(app: AppState, ref: UnitRef, unit: UnitData) {
                         .clip(RoundedCornerShape(14.dp))
                         .background(Color.White)
                         .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(14.dp))
+                        .clickable { app.go(Screen.WordLearn(ref, unit, unit.words, i, browse = true)) }
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -163,6 +164,10 @@ private fun WordsTab(app: AppState, ref: UnitRef, unit: UnitData) {
                     Column(Modifier.weight(1f)) {
                         Text("${w.w}  ${w.ph}", fontSize = 19.sp, fontWeight = FontWeight.Bold)
                         Text(w.cn, fontSize = 15.sp, color = Color.DarkGray)
+                    }
+                    prog?.score(prefix + "read/word/" + w.w)?.first?.let { sc ->
+                        val n = com.infcreative.studyhub.stars(sc)
+                        Text("🎤" + "★".repeat(n) + "☆".repeat(3 - n) + "  ", fontSize = 13.sp, color = Color(0xFFB45309))
                     }
                     Text(
                         when {

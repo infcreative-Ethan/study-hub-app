@@ -52,7 +52,7 @@ fun WordLearnScreen(app: AppState, page: Screen.WordLearn) {
     val words = page.words
     val player = remember { SegmentPlayer() }
     DisposableEffect(Unit) { onDispose { player.release() } }
-    var i by remember { mutableIntStateOf(0) }
+    var i by remember { mutableIntStateOf(page.start.coerceIn(0, (words.size - 1).coerceAtLeast(0))) }
     val prefix = ref.path ?: ""
 
     if (words.isEmpty()) { Text("没有新词了"); return }
@@ -60,37 +60,49 @@ fun WordLearnScreen(app: AppState, page: Screen.WordLearn) {
     LaunchedEffect(i) { playWord(app, ref, w, player) }
 
     Column(Modifier.fillMaxSize()) {
-        Header("学新词  ${i + 1} / ${words.size}", { app.back() })
+        Header(if (page.browse) "单词  ${i + 1} / ${words.size}" else "学新词  ${i + 1} / ${words.size}", { app.back() })
         LinearProgressIndicator(progress = { (i + 1f) / words.size }, modifier = Modifier.fillMaxWidth())
-        Row(Modifier.weight(1f).fillMaxWidth().padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            // 左：单词卡
             Column(
                 Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(Color.White)
-                    .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(28.dp))
+                    .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(24.dp))
                     .verticalScroll(rememberScrollState())
-                    .padding(28.dp),
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(w.w, fontSize = 72.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Text(w.ph, fontSize = 26.sp, color = Color.Gray)
+                Text(w.w, fontSize = 52.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(w.ph, fontSize = 20.sp, color = Color.Gray)
+                SpacerH(6)
+                Text(w.cn, fontSize = 26.sp, fontWeight = FontWeight.Medium)
                 SpacerH(12)
-                Text(w.cn, fontSize = 34.sp, fontWeight = FontWeight.Medium)
-                SpacerH(20)
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .clickable { com.infcreative.studyhub.Tts.speak(w.ex) }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("例句：${w.ex}", fontSize = 22.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Text("🔈", fontSize = 20.sp)
+                    Text("例句：${w.ex}", fontSize = 17.sp)
+                    Spacer(Modifier.width(6.dp))
+                    Text("🔈", fontSize = 17.sp)
                 }
-                SpacerH(20)
+            }
+            Spacer(Modifier.width(20.dp))
+            // 右：听和跟读
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SpeakerButton(72) { playWord(app, ref, w, player) }
+                    Spacer(Modifier.width(12.dp))
+                    Text("再听一遍", fontSize = 17.sp)
+                }
                 key(w.w) {
                     ReadPanel(
                         app, prefix + "read/word/" + w.w,
@@ -99,16 +111,14 @@ fun WordLearnScreen(app: AppState, page: Screen.WordLearn) {
                     )
                 }
             }
-            Spacer(Modifier.width(24.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                SpeakerButton(96) { playWord(app, ref, w, player) }
-                Text("再听一遍", fontSize = 16.sp)
-            }
         }
-        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             SoftButton("‹ 上一个") { if (i > 0) i-- }
             Spacer(Modifier.weight(1f))
-            if (i < words.size - 1) {
+            if (page.browse) {
+                if (i < words.size - 1) BigButton("下一个 ›") { i++ }
+                else BigButton("返回单词表") { app.back() }
+            } else if (i < words.size - 1) {
                 BigButton("记住了，下一个 ›") { app.progress?.learned(prefix + w.w); i++ }
             } else {
                 BigButton("学完了！做个小测验", color = MaterialTheme.colorScheme.tertiary) {

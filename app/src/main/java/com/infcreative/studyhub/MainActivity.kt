@@ -30,7 +30,7 @@ sealed class Screen {
     data class BookPage(val subject: Subject, val book: Book) : Screen()
     data class UnitPage(val book: Book, val ref: UnitRef, val tab: Int = 0) : Screen()
     data class LessonPage(val ref: UnitRef, val unit: UnitData, val index: Int) : Screen()
-    data class WordLearn(val ref: UnitRef, val unit: UnitData, val words: List<Word>) : Screen()
+    data class WordLearn(val ref: UnitRef, val unit: UnitData, val words: List<Word>, val start: Int = 0, val browse: Boolean = false) : Screen()
     data class WordReview(
         val ref: UnitRef, val unit: UnitData, val words: List<Word>, val title: String,
         val srs: Boolean = true,  // 是否计入遗忘曲线
