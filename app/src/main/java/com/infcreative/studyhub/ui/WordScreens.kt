@@ -1,5 +1,9 @@
 package com.infcreative.studyhub.ui
 
+import androidx.compose.foundation.rememberScrollState
+
+import androidx.compose.foundation.verticalScroll
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,7 +69,8 @@ fun WordLearnScreen(app: AppState, page: Screen.WordLearn) {
                     .clip(RoundedCornerShape(28.dp))
                     .background(Color.White)
                     .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(28.dp))
-                    .padding(32.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(w.w, fontSize = 72.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -83,6 +89,14 @@ fun WordLearnScreen(app: AppState, page: Screen.WordLearn) {
                     Text("例句：${w.ex}", fontSize = 22.sp)
                     Spacer(Modifier.width(8.dp))
                     Text("🔈", fontSize = 20.sp)
+                }
+                SpacerH(20)
+                key(w.w) {
+                    ReadPanel(
+                        app, prefix + "read/word/" + w.w,
+                        com.infcreative.studyhub.Sentence(w.w, w.cn, 0.0, 1.0, null),
+                        playOriginal = { playWord(app, ref, w, player) }, player = player,
+                    )
                 }
             }
             Spacer(Modifier.width(24.dp))
