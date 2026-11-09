@@ -3,7 +3,7 @@
 用法：python align.py --server http://.../res/ --unit english/pep3a/u1/ --out align.json
 输出：每课每句的 start/end、匹配率，以及识别出来的原始文字（供人工核对）。
 """
-import argparse, difflib, json, os, re, urllib.request
+import argparse, difflib, json, os, re, sys, urllib.request
 
 from faster_whisper import WhisperModel
 
@@ -94,6 +94,9 @@ def main():
             import subprocess
             subprocess.run(["python", "-m", "demucs", "--two-stems=vocals", "-n", "htdemucs", "--mp3", "-o", "sep", local], check=True)
             local = os.path.join("sep", "htdemucs", L["id"], "vocals.mp3")
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from seg import segs as energy_segs
+            vseg = {g: energy_segs(local, g) for g in (0.25, 0.45)}
         prompt = " ".join(s["en"] for s in L["sentences"])[:800] or None
         segs, _ = model.transcribe(local, language="en", word_timestamps=True, beam_size=5,
                                    vad_filter=False, condition_on_previous_text=False,
@@ -121,6 +124,8 @@ def main():
                 item["heard"] = " ".join(words[h][3] for h in range(min(hit), max(hit) + 1))
             out.append(item)
         result[L["id"]] = {"sentences": out, "transcript": " ".join(f"{w[3]}@{w[1]}" for w in words)}
+        if a.separate:
+            result[L["id"]]["vseg"] = vseg
         print(L["id"], f"{sum(o['matched'] for o in out)}/{sum(o['n'] for o in out)}")
     json.dump(result, open(a.out, "w"), ensure_ascii=False, indent=1)
     import base64, gzip
