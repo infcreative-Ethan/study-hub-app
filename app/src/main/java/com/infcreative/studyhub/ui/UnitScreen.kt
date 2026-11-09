@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,7 +54,10 @@ fun kindIcon(kind: String) = when (kind) {
 @Composable
 fun UnitScreen(app: AppState, page: Screen.UnitPage) {
     val ref = page.ref
-    val unit: UnitData? = remember(ref.id) { try { app.store.loadUnit(ref) } catch (e: Exception) { null } }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    val unit: UnitData? = remember(ref.id) {
+        try { app.store.loadUnit(ref) } catch (e: Exception) { loadError = e.toString(); null }
+    }
     var tab by remember { mutableIntStateOf(page.tab) }
 
     Column(Modifier.fillMaxSize()) {
@@ -62,7 +66,7 @@ fun UnitScreen(app: AppState, page: Screen.UnitPage) {
         }
         if (unit == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("内容读取失败，请返回后重新下载这个单元。", fontSize = 20.sp)
+                Text("内容读取失败，请返回后重新下载这个单元。\n${loadError ?: ""}", fontSize = 18.sp)
             }
             return@Column
         }

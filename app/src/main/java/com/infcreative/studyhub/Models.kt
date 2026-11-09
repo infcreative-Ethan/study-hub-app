@@ -72,16 +72,17 @@ data class UnitData(
 )
 
 fun parseQuestion(o: JSONObject): Question {
+    val type = o.str("t") ?: "choice"
     val au = if (o.has("au") && !o.isNull("au")) o.getJSONObject("au").str("f") else null
     return Question(
-        type = o.str("t") ?: "choice",
+        type = type,
         q = o.str("q") ?: "",
         options = o.arr("o").strings(),
-        answer = o.int("a") ?: 0,
+        answer = if (type == "order") 0 else o.optInt("a", 0),
         explain = o.str("x"),
         audio = au,
         tokens = o.arr("w").strings(),
-        answerText = if (o.str("t") == "order") o.str("a") ?: "" else "",
+        answerText = if (type == "order") o.optString("a", "") else "",
         passage = o.str("passage"),
     )
 }
