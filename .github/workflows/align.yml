@@ -6,6 +6,10 @@ on:
       unit:
         description: 单元资源路径
         default: english/pep3a/u1/
+      model:
+        default: small.en
+      only:
+        default: ""
       server:
         description: 资源服务器地址
         required: true
@@ -20,7 +24,7 @@ jobs:
           python-version: "3.11"
       - run: pip install faster-whisper==1.1.1 requests
       - name: Align
-        run: python tools/align.py --server "${{ inputs.server }}" --unit "${{ inputs.unit }}" --out align.json
+        run: python tools/align.py --server "${{ inputs.server }}" --unit "${{ inputs.unit }}" --out align.json --model "${{ inputs.model }}" --only "${{ inputs.only }}"
       - uses: actions/upload-artifact@v4
         with:
           name: align

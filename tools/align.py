@@ -76,17 +76,23 @@ def main():
     ap.add_argument("--unit", required=True)
     ap.add_argument("--out", default="align.json")
     ap.add_argument("--model", default="small.en")
+    ap.add_argument("--only", default="")
     a = ap.parse_args()
     base = a.server.rstrip("/") + "/" + a.unit.strip("/") + "/"
     unit = json.loads(urllib.request.urlopen(base + "unit.json").read().decode("utf-8"))
     model = WhisperModel(a.model, device="cpu", compute_type="int8")
     os.makedirs("audio", exist_ok=True)
     result = {}
+    only = set(x for x in a.only.split(",") if x)
     for L in unit["lessons"]:
+        if only and L["id"] not in only:
+            continue
         local = os.path.join("audio", L["id"] + ".mp3")
         urllib.request.urlretrieve(base + L["audio"], local)
+        prompt = " ".join(s["en"] for s in L["sentences"])[:800] or None
         segs, _ = model.transcribe(local, language="en", word_timestamps=True, beam_size=5,
-                                   vad_filter=False, condition_on_previous_text=False)
+                                   vad_filter=False, condition_on_previous_text=False,
+                                   initial_prompt=prompt, no_speech_threshold=0.9)
         words = []
         for s in segs:
             for w in s.words or []:
