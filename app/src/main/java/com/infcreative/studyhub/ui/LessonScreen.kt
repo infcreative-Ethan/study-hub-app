@@ -175,10 +175,24 @@ fun LessonScreen(app: AppState, page: Screen.LessonPage) {
                                     .clickable(enabled = !calibrating) { playSentence(i) }
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                             ) {
-                                Text(s.en, fontSize = 24.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(s.en, fontSize = 24.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f))
+                                    app.progress?.score(prefix + "read/" + lesson.id + "/" + i)?.let { sc ->
+                                        val st = com.infcreative.studyhub.stars(sc.first)
+                                        Text("★".repeat(st) + "☆".repeat(3 - st), fontSize = 14.sp, color = Color(0xFFF59E0B))
+                                    }
+                                }
                                 if (showCn && s.cn.isNotEmpty()) Text(s.cn, fontSize = 17.sp, color = Color.DarkGray)
                             }
                         }
+                    }
+                    val readIdx = active
+                    if (!calibrating && timed && readIdx in lesson.sentences.indices) {
+                        Spacer(Modifier.padding(4.dp))
+                        ReadPanel(
+                            app, prefix + "read/" + lesson.id + "/" + readIdx, lesson.sentences[readIdx],
+                            playOriginal = { playSentence(readIdx) }, player = player,
+                        )
                     }
                     if (calibrating) {
                         Column(

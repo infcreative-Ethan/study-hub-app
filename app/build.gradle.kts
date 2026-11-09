@@ -12,8 +12,8 @@ android {
         applicationId = "com.infcreative.studyhub"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+        versionName = "0.2.0"
     }
 
     signingConfigs {
@@ -54,4 +54,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // 离线语音识别（朗读评分）
+    implementation("net.java.dev.jna:jna:5.13.0@aar")
+    implementation("com.alphacephei:vosk-android:0.3.47@aar")
 }
