@@ -125,6 +125,15 @@ class Store(private val ctx: Context) {
     fun clearTiming(ref: UnitRef, lessonId: String) { File(unitDir(ref), "timing_$lessonId.json").delete() }
 
     fun file(ref: UnitRef, rel: String): File = File(unitDir(ref), rel)
+
+    /** 课本封面：先用本地缓存，没有再从服务器下载 */
+    fun cachedCover(path: String): File = File(ctx.filesDir, "covers/" + path.replace("/", "_"))
+
+    suspend fun fetchCover(path: String): File? = withContext(Dispatchers.IO) {
+        val f = cachedCover(path)
+        if (f.exists() && f.length() > 0) return@withContext f
+        try { httpGet(server + path, f); f } catch (e: Exception) { null }
+    }
 }
 
 // ================= 孩子档案与学习记录 =================
@@ -214,6 +223,45 @@ class Progress(private val file: File) {
     fun dueCount(prefix: String): Int {
         val w = obj("words"); val t = today(); var n = 0
         w.keys().forEach { k -> if (k.startsWith(prefix) && w.getJSONObject(k).optLong("due") <= t) n++ }
+        return n
+    }
+
+    // ---- 汇总统计（“我的”页面） ----
+    data class Stats(
+        val learned: Int, val mastered: Int, val due: Int, val lessons: Int,
+        val reads: Int, val readAvg: Int, val quizzes: List<Triple<String, Int, Int>>, val wrong: Int,
+    )
+
+    fun stats(): Stats {
+        val w = obj("words"); val t = today()
+        var learned = 0; var mastered = 0; var due = 0
+        w.keys().forEach { k ->
+            val o = w.getJSONObject(k); learned++
+            if (o.optInt("stage") >= MAX_STAGE) mastered++
+            if (o.optLong("due") <= t) due++
+        }
+        val l = obj("lessons"); var lessons = 0
+        l.keys().forEach { if (l.optBoolean(it)) lessons++ }
+        val q = obj("quiz"); var reads = 0; var readSum = 0
+        val quizzes = mutableListOf<Triple<String, Int, Int>>()
+        q.keys().forEach { k ->
+            val o = q.getJSONObject(k)
+            if (k.contains("/read/")) { reads++; readSum += o.optInt("score") }
+            else quizzes.add(Triple(k, o.optInt("score"), o.optInt("total")))
+        }
+        return Stats(learned, mastered, due, lessons, reads, if (reads > 0) readSum / reads else 0,
+            quizzes.sortedBy { it.first }, obj("wrong").length())
+    }
+
+    fun hasKeyPrefix(map: String, prefix: String): Boolean {
+        val o = obj(map); var found = false
+        o.keys().forEach { if (it.startsWith(prefix)) found = true }
+        return found
+    }
+
+    fun wordCount(prefix: String): Int {
+        val o = obj("words"); var n = 0
+        o.keys().forEach { if (it.startsWith(prefix)) n++ }
         return n
     }
 

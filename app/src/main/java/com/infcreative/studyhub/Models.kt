@@ -17,7 +17,7 @@ data class UnitRef(
     val path: String?, val size: Long, val version: Int,
 )
 
-data class Book(val id: String, val name: String, val publisher: String, val units: List<UnitRef>)
+data class Book(val id: String, val name: String, val publisher: String, val units: List<UnitRef>, val cover: String? = null)
 data class Subject(val id: String, val name: String, val icon: String, val books: List<Book>)
 
 fun parseCatalog(o: JSONObject): List<Subject> = o.arr("subjects").mapObj { s ->
@@ -32,6 +32,7 @@ fun parseCatalog(o: JSONObject): List<Subject> = o.arr("subjects").mapObj { s ->
                         u.str("path"), u.optLong("size", 0L), u.optInt("version", 1),
                     )
                 },
+                b.str("cover"),
             )
         },
     )

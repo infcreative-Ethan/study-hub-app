@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import com.infcreative.studyhub.ui.BookScreen
 import com.infcreative.studyhub.ui.KidsScreen
 import com.infcreative.studyhub.ui.LessonScreen
+import com.infcreative.studyhub.ui.MyScreen
+import com.infcreative.studyhub.ui.ShelfScreen
 import com.infcreative.studyhub.ui.QuizScreen
 import com.infcreative.studyhub.ui.SubjectsScreen
 import com.infcreative.studyhub.ui.UnitScreen
@@ -23,6 +25,8 @@ import com.infcreative.studyhub.ui.WordLearnScreen
 sealed class Screen {
     object Kids : Screen()
     object Subjects : Screen()
+    data class Shelf(val subject: Subject) : Screen()
+    object My : Screen()
     data class BookPage(val subject: Subject, val book: Book) : Screen()
     data class UnitPage(val book: Book, val ref: UnitRef, val tab: Int = 0) : Screen()
     data class LessonPage(val ref: UnitRef, val unit: UnitData, val index: Int) : Screen()
@@ -95,6 +99,8 @@ fun AppRoot(app: AppState) {
     when (top) {
         is Screen.Kids -> KidsScreen(app)
         is Screen.Subjects -> SubjectsScreen(app)
+        is Screen.Shelf -> ShelfScreen(app, top)
+        is Screen.My -> MyScreen(app)
         is Screen.BookPage -> BookScreen(app, top)
         is Screen.UnitPage -> UnitScreen(app, top)
         is Screen.LessonPage -> LessonScreen(app, top)
