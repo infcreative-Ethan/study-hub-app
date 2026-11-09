@@ -120,7 +120,9 @@ fun AdaptiveScale(content: @Composable () -> Unit) {
     val cfg = androidx.compose.ui.platform.LocalConfiguration.current
     val d = androidx.compose.ui.platform.LocalDensity.current
     val f = minOf(1f, cfg.screenHeightDp / 640f, cfg.screenWidthDp / 1100f).coerceAtLeast(0.6f)
-    val density = androidx.compose.ui.unit.Density(d.density * f, d.fontScale.coerceAtMost(1.15f))
+    // 文字比布局少缩一点，保证小屏上也看得清
+    val textBoost = Math.pow((1.0 / f), 0.35).toFloat()
+    val density = androidx.compose.ui.unit.Density(d.density * f, d.fontScale.coerceAtMost(1.15f) * textBoost)
     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides density) {
         content()
     }
