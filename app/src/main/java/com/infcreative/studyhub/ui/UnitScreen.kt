@@ -185,13 +185,24 @@ private fun WordsTab(app: AppState, ref: UnitRef, unit: UnitData) {
 
 fun playWord(app: AppState, ref: UnitRef, w: com.infcreative.studyhub.Word, player: SegmentPlayer) {
     val f = w.audio?.let { app.store.file(ref, it) }
-    if (f != null && f.exists()) player.play(f) else Tts.speak(w.w)
+    if (f != null && f.exists()) player.play(f) else speakText(app, ref, w.w, player)
+}
+
+/** 句子发音：优先用服务器上合成好的录音（tts/<md5前12位>.mp3），没有再用手机自带朗读 */
+fun speakText(app: AppState, ref: UnitRef, text: String, player: SegmentPlayer) {
+    val t = text.trim()
+    val md5 = java.security.MessageDigest.getInstance("MD5").digest(t.toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }.take(12)
+    val f = app.store.file(ref, "tts/$md5.mp3")
+    if (f.exists() && f.length() > 0) player.play(f) else Tts.speak(t)
 }
 
 // ---------------- 知识点 ----------------
 @Composable
 private fun KnowledgeTab(app: AppState, ref: UnitRef, unit: UnitData) {
     val prefix = ref.path ?: ""
+    val player = remember { SegmentPlayer() }
+    DisposableEffect(Unit) { onDispose { player.release() } }
     val score = app.progress?.score(prefix + "kp")
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -225,7 +236,7 @@ private fun KnowledgeTab(app: AppState, ref: UnitRef, unit: UnitData) {
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .clickable { Tts.speak(it.en.trimStart('—')) }
+                            .clickable { speakText(app, ref, it.en.trimStart('—'), player) }
                             .padding(vertical = 6.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

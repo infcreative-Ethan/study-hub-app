@@ -83,7 +83,7 @@ fun WordLearnScreen(app: AppState, page: Screen.WordLearn) {
                     Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { com.infcreative.studyhub.Tts.speak(w.ex) }
+                        .clickable { speakText(app, ref, w.ex, player) }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
