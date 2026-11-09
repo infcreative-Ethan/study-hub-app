@@ -1,0 +1,30 @@
+name: Transcribe clips
+on:
+  workflow_dispatch:
+    inputs:
+      server: { required: true }
+      files: { description: "逗号分隔的相对路径", required: true }
+      model: { default: small.en }
+jobs:
+  tr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install faster-whisper requests
+      - env:
+          SERVER: ${{ inputs.server }}
+          FILES: ${{ inputs.files }}
+          MODEL: ${{ inputs.model }}
+        run: |
+          python - <<'PY'
+          import os, requests
+          from faster_whisper import WhisperModel
+          m = WhisperModel(os.environ["MODEL"], device="cpu", compute_type="int8")
+          for f in os.environ["FILES"].split(","):
+              f = f.strip()
+              b = requests.get(os.environ["SERVER"] + f, timeout=60).content
+              open("a.mp3", "wb").write(b)
+              segs, _ = m.transcribe("a.mp3", language="en")
+              print("TR|" + f + "|" + " ".join(s.text.strip() for s in segs))
+          PY
