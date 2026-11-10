@@ -3,6 +3,13 @@ name: Build APK
 on:
   push:
     branches: [ main ]
+    paths:            # 只有 APP 代码变了才编译出新版本
+      - "app/**"
+      - "*.gradle.kts"
+      - "gradle/**"
+      - "gradle.properties"
+      - "keystore/**"
+      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 permissions:

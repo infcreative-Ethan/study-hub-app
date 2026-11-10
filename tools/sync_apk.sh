@@ -16,16 +16,22 @@ OLD=$(grep -o '"versionCode": *[0-9]*' "$DIR/latest.json" 2>/dev/null | grep -o 
 [ "$NEW" -le "${OLD:-0}" ] && exit 0
 APK=$(grep -o '"apk": *"[^"]*"' /tmp/latest.json | sed 's/.*"\([^"]*\)"$/\1/')
 URL_APK=$(echo "$API" | grep -o "\"browser_download_url\": *\"[^\"]*$APK\"" | sed 's/.*"\(http[^"]*\)"/\1/')
-# 服务器连 GitHub 不稳定：断点续传，最多重试 8 次；下载不完整就不更新 latest.json
+# GitHub 原始文件的 SHA-256（来自 API），用来校验下载结果，所以走镜像也安全
+SHA=$(echo "$API" | grep -B6 "browser_download_url\": *\"[^\"]*$APK\"" | grep -o 'sha256:[0-9a-f]*' | tail -1 | cut -d: -f2)
+# 国内服务器直连 GitHub 很慢：依次尝试直连和几个公共加速镜像
 ok=0
-for i in 1 2 3 4 5 6 7 8; do
-  if curl -fsSL --retry 3 --max-time 900 -C - "$URL_APK" -o "$DIR/$APK.part"; then ok=1; break; fi
-  sleep 5
+for PREFIX in "" "https://ghfast.top/" "https://gh-proxy.com/" "https://ghproxy.net/"; do
+  rm -f "$DIR/$APK.part"
+  if curl -fsSL --retry 2 --connect-timeout 15 --speed-limit 20000 --speed-time 30 --max-time 900 \
+       "$PREFIX$URL_APK" -o "$DIR/$APK.part"; then
+    GOT=$(sha256sum "$DIR/$APK.part" | cut -d' ' -f1)
+    if [ -z "$SHA" ] || [ "$GOT" = "$SHA" ]; then
+      unzip -tq "$DIR/$APK.part" >/dev/null 2>&1 && { ok=1; echo "downloaded via ${PREFIX:-github}"; break; }
+    fi
+    echo "checksum mismatch via ${PREFIX:-github}"
+  fi
 done
-SIZE=$(stat -c %s "$DIR/$APK.part" 2>/dev/null || echo 0)
-if [ "$ok" != 1 ] || [ "$SIZE" -lt 1000000 ] || ! unzip -tq "$DIR/$APK.part" >/dev/null 2>&1; then
-  echo "download failed, will retry next time"; exit 1
-fi
+if [ "$ok" != 1 ]; then rm -f "$DIR/$APK.part"; echo "download failed, will retry next time"; exit 1; fi
 mv "$DIR/$APK.part" "$DIR/$APK"
 cp /tmp/latest.json "$DIR/latest.json"
 ls -1t "$DIR"/StudyHub-*.apk 2>/dev/null | tail -n +4 | xargs -r rm -f   # 只保留最近 3 个版本
